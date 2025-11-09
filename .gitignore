@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# DVC
+/dvc_storage
+.dvc/
+
+# MLflow
+mlruns/
+mlflow/
+*.log
+mlflow.log
+
+# API logs
+api.log
+nohup.out
+start.log
+
+# Models (on HuggingFace)
+models/transformer/best_model/
+
+# Data (large files)
+data/raw/*.csv
+!data/raw/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+*.pid
+.*.pid
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables (sensitive)
+.env
+api/.env
+
+# Large model files
+*.safetensors
+*.bin
+*.ckpt
+
+# Cache
+.pytest_cache/
+*.egg-info/
+dist/
+build/

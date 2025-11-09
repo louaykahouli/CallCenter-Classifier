@@ -1,0 +1,20 @@
+# Configuration des paramètres DVC
+# Ce fichier est utilisé par dvc.yaml pour tracker les hyperparamètres
+
+# Modèle Transformer
+model_name: "distilbert-base-multilingual-cased"
+max_length: 128
+batch_size: 16
+learning_rate: 2e-5
+num_epochs: 3
+weight_decay: 0.01
+warmup_steps: 500
+
+# Données
+test_size: 0.2
+random_state: 42
+min_text_length: 10
+
+# MLflow
+mlflow_tracking_uri: "http://localhost:5000"
+experiment_name: "CallCenterAI-Transformer"

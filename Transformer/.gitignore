@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+
+# DVC
+/dvc_storage
+
+# MLflow
+mlruns/
+mlflow.log
+
+# API logs
+*.log
+api.log
+nohup.out
+start.log
+
+# Models (tracked by DVC)
+# models/
+
+# Data (tracked by DVC)
+# data/raw/
+# data/processed/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+.*.pid
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large model files (exclude safetensors, keep pytorch_model.bin with Git LFS)
+*.safetensors

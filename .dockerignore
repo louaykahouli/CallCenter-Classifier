@@ -1,0 +1,48 @@
+# Docker
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+.dockerignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# MLflow
+mlruns/
+mlflow/
+*.log
+
+# Data
+*.csv
+!.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests
+.pytest_cache/
+*.coverage
+
+# Temporary
+*.tmp
+*.bak

@@ -1,0 +1,18 @@
+# ML & data
+scikit-learn==1.7.2
+pandas==2.2.2
+numpy==2.1.1
+joblib==1.4.2
+
+# Experiment tracking & pipelines
+mlflow==2.16.0
+dvc==3.55.2
+
+# Web API
+fastapi==0.111.1          # For building API endpoints
+uvicorn[standard]==0.23.2 # ASGI server to run FastAPI
+
+# Utilities
+pydantic==2.7.0           # Data validation (used by FastAPI)
+prometheus-client==0.18.0 # For /metrics endpoint
+langdetect==1.0.9         # For language detection in Agent IA

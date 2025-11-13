@@ -16,15 +16,23 @@ __pycache__/
 venv/
 ENV/
 env/
+Transformer/.venv/
 
 # MLflow
 mlruns/
+Transformer/mlruns/
 mlflow/
 *.log
 
-# Data
+# Models (téléchargés depuis HuggingFace)
+models/
+Transformer/models/
+
+# Data (exclude large files)
 *.csv
 !.gitkeep
+Transformer/data/raw/*.csv
+Transformer/data/processed/*.csv
 
 # IDE
 .vscode/
@@ -38,6 +46,7 @@ Thumbs.db
 # Git
 .git/
 .gitignore
+.gitattributes
 
 # Tests
 .pytest_cache/
@@ -46,3 +55,16 @@ Thumbs.db
 # Temporary
 *.tmp
 *.bak
+
+# Documentation et scripts non nécessaires dans l'image
+*.md
+!README.md
+push_to_github.sh
+test_docker.sh
+Transformer/deploy_simple.sh
+Transformer/quick_deploy.sh
+Transformer/setup_hf.sh
+Transformer/test_hf_api.py
+Transformer/COMMENT_DEPLOYER_HF.md
+Transformer/HUGGINGFACE_DEPLOYMENT_GUIDE.md
+Transformer/HUGGINGFACE_GUIDE.md

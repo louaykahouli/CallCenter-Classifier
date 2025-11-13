@@ -1,57 +1,25 @@
-version: '3.8'
-
 services:
-  # API FastAPI
-  api:
+  # CallCenter API + MLflow (tout en un)
+  callcenter:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: callcenter-api
+    container_name: callcenter
+    command: all
     ports:
-      - "8000:8000"
+      - "8000:8000"  # API
+      - "5000:5000"  # MLflow UI
     environment:
       - HF_MODEL_NAME=Kahouli/callcenter-ticket-classifier
       - USE_LOCAL_MODEL=False
-      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - MLFLOW_TRACKING_URI=http://localhost:5000
       - MLFLOW_EXPERIMENT_NAME=ticket_classification
     volumes:
       - ./Transformer/mlruns:/app/mlruns
       - ./Transformer/data:/app/data
-    depends_on:
-      - mlflow
     restart: unless-stopped
-    networks:
-      - callcenter-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # MLflow UI
-  mlflow:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: callcenter-mlflow
-    command: mlflow
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./Transformer/mlruns:/app/mlruns
-    restart: unless-stopped
-    networks:
-      - callcenter-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-networks:
-  callcenter-network:
-    driver: bridge
-
-volumes:
-  mlruns:
-  data:

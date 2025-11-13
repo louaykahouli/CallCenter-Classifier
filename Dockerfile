@@ -24,8 +24,11 @@ COPY Transformer/requirements.txt .
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copier le code du projet
-COPY Transformer/ /app/
+# Copier seulement le code nécessaire (pas .venv, models, mlruns)
+COPY Transformer/api/ /app/api/
+COPY Transformer/src/ /app/src/
+COPY Transformer/tests/ /app/tests/
+COPY Transformer/params.yaml /app/
 
 # Créer les dossiers nécessaires
 RUN mkdir -p /app/mlruns /app/data/processed /app/data/raw

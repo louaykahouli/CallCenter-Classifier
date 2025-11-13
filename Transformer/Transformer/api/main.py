@@ -20,6 +20,11 @@ from .config import (
     MLFLOW_TRACKING_URI, MLFLOW_EXPERIMENT_NAME
 )
 
+# Import de l'agent intelligent
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from src.intelligent_agent import IntelligentAgent
+
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

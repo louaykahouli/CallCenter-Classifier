@@ -23,3 +23,42 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # TF-IDF SVM API
+  tfidf-svm:
+    build:
+      context: ./tfidf_svm
+      dockerfile: Dockerfile.api
+    container_name: tfidf-svm
+    ports:
+      - "8001:8000"  # API TF-IDF sur le port 8001
+    volumes:
+      - ./tfidf_svm/models:/app/models
+      - ./tfidf_svm/data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Agent IA Intelligent (Router)
+  ia-agent:
+    build:
+      context: ./ia_agent
+      dockerfile: Dockerfile
+    container_name: ia-agent
+    ports:
+      - "8002:8002"  # API Agent IA sur le port 8002
+    environment:
+      - GROK_API_KEY=xai-EyqPqZvWyTu8mnQiFCFyYPVuAYdNxPnnjw4z9onvzqrZ5wAjcNkJqWwKx4uc7tY5d68c1njQyeDgJwKx
+      - USE_GROK=true
+    depends_on:
+      - callcenter
+      - tfidf-svm
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

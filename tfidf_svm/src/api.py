@@ -42,6 +42,17 @@ def scrub_pii(text: str) -> str:
     return text
 
 # -----------------------------
+# Health Check Endpoint
+# -----------------------------
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "model": "TF-IDF + SVM",
+        "model_loaded": clf is not None and vectorizer is not None
+    }
+
+# -----------------------------
 # TF-IDF Prediction Endpoint
 # -----------------------------
 @app.post("/predict")

@@ -42,6 +42,25 @@ services:
       timeout: 10s
       retries: 3
 
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: callcenter-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=callcenter
+      - POSTGRES_PASSWORD=callcenter2024
+      - POSTGRES_DB=conversations
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U callcenter"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Agent IA Intelligent (Router)
   ia-agent:
     build:
@@ -53,12 +72,30 @@ services:
     environment:
       - GROK_API_KEY=xai-EyqPqZvWyTu8mnQiFCFyYPVuAYdNxPnnjw4z9onvzqrZ5wAjcNkJqWwKx4uc7tY5d68c1njQyeDgJwKx
       - USE_GROK=true
+      - CACHE_ENABLED=true
+      - CACHE_TTL=3600
+      # PostgreSQL Configuration
+      - DB_TYPE=postgresql
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=callcenter
+      - POSTGRES_PASSWORD=callcenter2024
+      - POSTGRES_DB=conversations
+    volumes:
+      - ./ia_agent/data:/app/data  # Persist conversations database (SQLite backup)
     depends_on:
-      - callcenter
-      - tfidf-svm
+      postgres:
+        condition: service_healthy
+      callcenter:
+        condition: service_started
+      tfidf-svm:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+volumes:
+  postgres_data:

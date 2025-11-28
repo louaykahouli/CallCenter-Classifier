@@ -4,14 +4,17 @@ Route les requêtes vers TF-IDF ou Transformer selon la complexité
 Utilise Grok pour générer des réponses intelligentes
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 import httpx
 import logging
 import os
+import time
+import uuid
 from typing import Dict, Optional
 from intelligent_agent import IntelligentAgent
+from cache_manager import CacheManager, ConversationStore
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -22,11 +25,15 @@ GROK_API_KEY = os.getenv("GROK_API_KEY", "xai-EyqPqZvWyTu8mnQiFCFyYPVuAYdNxPnnjw
 GROK_API_URL = "https://api.x.ai/v1/chat/completions"
 USE_GROK = os.getenv("USE_GROK", "true").lower() == "true"
 
+# Configuration du cache
+CACHE_TTL = int(os.getenv("CACHE_TTL", "3600"))  # 1 heure par défaut
+CACHE_ENABLED = os.getenv("CACHE_ENABLED", "true").lower() == "true"
+
 # Initialisation de l'application FastAPI
 app = FastAPI(
     title="Agent IA Intelligent",
     description="Router intelligent qui choisit le meilleur modèle selon la complexité du texte",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 # Configuration CORS pour permettre les requêtes du frontend
@@ -40,6 +47,10 @@ app.add_middleware(
 
 # Initialisation de l'agent
 agent = IntelligentAgent(use_distilbert_for_all=False)
+
+# Initialisation du cache et du stockage
+cache_manager = CacheManager(cache_ttl=CACHE_TTL)
+conversation_store = ConversationStore(db_path="/app/data/conversations.db")
 
 # Configuration des URLs des modèles
 TFIDF_API_URL = "http://tfidf-svm:8000/predict"  # URL interne Docker
@@ -153,6 +164,86 @@ Réponds en français, en 3-4 phrases maximum, format texte brut (pas de markdow
         )
 
 
+async def generate_conversation_title(input_text: str, prediction: str) -> str:
+    """
+    Génère un titre court et significatif pour la conversation avec Grok
+    
+    Args:
+        input_text: Le premier message de la conversation
+        prediction: La catégorie prédite
+        
+    Returns:
+        Un titre court (max 50 caractères)
+    """
+    if not USE_GROK or not GROK_API_KEY:
+        # Fallback : utiliser les 50 premiers caractères
+        title = input_text[:47] + '...' if len(input_text) > 50 else input_text
+        return title.capitalize()
+    
+    try:
+        # Créer le prompt pour Grok
+        prompt = f"""Génère un titre court et descriptif (maximum 40 caractères) pour cette conversation :
+
+MESSAGE: "{input_text}"
+CATÉGORIE: {prediction}
+
+Le titre doit :
+- Être court et explicite (max 40 caractères)
+- Résumer l'essentiel de la demande
+- Ne pas inclure d'émoji (sera ajouté automatiquement)
+- Commencer par une majuscule
+
+Réponds UNIQUEMENT avec le titre, rien d'autre."""
+
+        # Appeler l'API Grok
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                GROK_API_URL,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {GROK_API_KEY}"
+                },
+                json={
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "Tu génères des titres courts et descriptifs pour des conversations. Réponds uniquement avec le titre, sans guillemets ni ponctuation finale."
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    "model": "grok-beta",
+                    "stream": False,
+                    "temperature": 0.5,
+                    "max_tokens": 20
+                }
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                title = result['choices'][0]['message']['content'].strip()
+                # Nettoyer les guillemets si présents
+                title = title.strip('"').strip("'").strip()
+                # Limiter à 50 caractères
+                if len(title) > 50:
+                    title = title[:47] + "..."
+                logger.info(f"Titre Grok généré: {title}")
+                return title
+            else:
+                logger.error(f"Erreur API Grok pour titre: {response.status_code}")
+                # Fallback
+                title = input_text[:47] + '...' if len(input_text) > 50 else input_text
+                return title.capitalize()
+    
+    except Exception as e:
+        logger.error(f"Erreur lors de la génération du titre: {str(e)}")
+        # Fallback
+        title = input_text[:47] + '...' if len(input_text) > 50 else input_text
+        return title.capitalize()
+
+
 def generate_fallback_response(
     input_text: str,
     prediction: str,
@@ -195,11 +286,28 @@ class TextRequest(BaseModel):
     """Schéma de la requête"""
     text: str
     force_model: Optional[str] = None  # 'tfidf' ou 'transformer' pour forcer un modèle
+    session_id: Optional[str] = None  # ID de session pour le tracking
+    conversation_title: Optional[str] = None  # Titre descriptif de la conversation
+    
+    @validator('text')
+    def text_must_not_be_empty(cls, v):
+        """Valider que le texte n'est pas vide"""
+        if not v or not v.strip():
+            raise ValueError('Le texte ne peut pas être vide')
+        return v
 
 
 class PredictionResponse(BaseModel):
     """Schéma de la réponse"""
     input: str
+    prediction: str
+    probabilities: Dict[str, float]
+    model_used: str
+    complexity_analysis: Dict
+    reasoning: str
+    generated_response: str
+    session_id: str
+    cache_hit: bool = False  # Indique si la réponse vient du cache
     prediction: str
     probabilities: Dict[str, float]
     model_used: str
@@ -288,14 +396,57 @@ async def analyze_complexity(request: TextRequest):
 async def predict_with_routing(request: TextRequest):
     """
     Prédit la catégorie d'un ticket en choisissant automatiquement le meilleur modèle
-    selon la complexité du texte
+    selon la complexité du texte. Utilise le cache pour améliorer les performances.
     """
+    start_time = time.time()
+    cache_hit = False
+    
+    # Générer ou utiliser le session_id
+    session_id = request.session_id or str(uuid.uuid4())
+    
     try:
-        # 1. Analyser la complexité
+        # 1. Vérifier le cache si activé
+        if CACHE_ENABLED and not request.force_model:
+            cached_result = cache_manager.get(request.text)
+            if cached_result:
+                logger.info(f"✅ Cache HIT pour session {session_id[:8]}...")
+                cached_result['session_id'] = session_id
+                cached_result['cache_hit'] = True
+                
+                # Sauvegarder quand même la conversation en DB (pour l'historique)
+                try:
+                    # Générer un titre si c'est une nouvelle session
+                    conversation_title = request.conversation_title
+                    if not conversation_title or conversation_title.strip() == "":
+                        if len(request.text) > 40:
+                            conversation_title = request.text[:37] + "..."
+                        else:
+                            conversation_title = request.text
+                        conversation_title = conversation_title.capitalize()
+                    
+                    conversation_store.save_conversation(
+                        session_id=session_id,
+                        input_text=request.text,
+                        prediction=cached_result['prediction'],
+                        model_used=cached_result['model_used'],
+                        complexity_score=cached_result['complexity_analysis']['score'],
+                        complexity_level=cached_result['complexity_analysis']['level'],
+                        probabilities=cached_result['probabilities'],
+                        response_time=0.0,  # Temps de réponse du cache négligeable
+                        generated_response=cached_result['generated_response'],
+                        conversation_title=conversation_title
+                    )
+                    logger.info(f"💾 Conversation sauvegardée (cache hit)")
+                except Exception as db_error:
+                    logger.error(f"Erreur DB lors du cache hit: {db_error}")
+                
+                return cached_result
+        
+        # 2. Analyser la complexité
         routing_result = agent.route(request.text)
         complexity_score = routing_result['complexity_score']
         
-        # 2. Déterminer le modèle à utiliser
+        # 3. Déterminer le modèle à utiliser
         if request.force_model:
             # Si un modèle est forcé
             model_to_use = request.force_model.lower()
@@ -305,13 +456,13 @@ async def predict_with_routing(request: TextRequest):
             model_to_use = "tfidf" if complexity_score < COMPLEXITY_THRESHOLD else "transformer"
             logger.info(f"Routage automatique: complexité={complexity_score} → {model_to_use}")
         
-        # 3. Appeler le modèle approprié
+        # 4. Appeler le modèle approprié
         prediction_result = await _call_model(model_to_use, request.text)
         
         prediction = prediction_result.get("prediction", prediction_result.get("predicted_category"))
         probabilities = prediction_result.get("probabilities", {})
         
-        # 4. Générer une réponse intelligente avec Grok
+        # 5. Générer une réponse intelligente avec Grok
         generated_response = await generate_grok_response(
             input_text=request.text,
             prediction=prediction,
@@ -321,7 +472,25 @@ async def predict_with_routing(request: TextRequest):
             complexity_level=routing_result['complexity_level']
         )
         
-        # 5. Construire la réponse complète
+        # 5.5. Générer un titre intelligent si pas fourni et c'est une nouvelle conversation
+        conversation_title = request.conversation_title
+        if not conversation_title or conversation_title.strip() == "":
+            # Générer un titre simple mais descriptif (sans appeler Grok pour éviter les erreurs)
+            # Format: résumé du texte + catégorie
+            if len(request.text) > 40:
+                conversation_title = request.text[:37] + "..."
+            else:
+                conversation_title = request.text
+            # Capitaliser la première lettre
+            conversation_title = conversation_title.capitalize()
+            logger.info(f"📝 Titre généré: {conversation_title}")
+        else:
+            logger.info(f"📝 Titre fourni: {conversation_title}")
+        
+        # 6. Calculer le temps de réponse
+        response_time = time.time() - start_time
+        
+        # 7. Construire la réponse complète
         response = {
             "input": request.text,
             "prediction": prediction,
@@ -333,8 +502,33 @@ async def predict_with_routing(request: TextRequest):
                 "details": routing_result['details']
             },
             "reasoning": routing_result['reasoning'] + f" → Modèle utilisé: {model_to_use.upper()}",
-            "generated_response": generated_response
+            "generated_response": generated_response,
+            "session_id": session_id,
+            "cache_hit": False
         }
+        
+        # 8. Sauvegarder dans le cache (seulement si pas forcé)
+        if CACHE_ENABLED and not request.force_model:
+            cache_manager.set(request.text, response)
+            logger.info(f"💾 Réponse mise en cache")
+        
+        # 9. Sauvegarder la conversation dans la base de données
+        try:
+            conversation_store.save_conversation(
+                session_id=session_id,
+                input_text=request.text,
+                prediction=prediction,
+                model_used=model_to_use,
+                complexity_score=complexity_score,
+                complexity_level=routing_result['complexity_level'],
+                probabilities=probabilities,
+                response_time=response_time,
+                generated_response=generated_response,
+                conversation_title=conversation_title  # Titre généré ou fourni
+            )
+        except Exception as db_error:
+            logger.error(f"Erreur lors de la sauvegarde en DB: {db_error}")
+            # Ne pas faire échouer la requête si la DB pose problème
         
         return response
     
@@ -404,16 +598,89 @@ async def _call_model(model_name: str, text: str) -> Dict:
 @app.get("/stats")
 async def get_statistics():
     """
-    Retourne les statistiques d'utilisation de l'agent
+    Retourne les statistiques d'utilisation de l'agent incluant cache et conversations
     """
     stats = agent.get_stats()
+    cache_stats = cache_manager.get_stats()
+    db_stats = conversation_store.get_global_stats(days=7)
+    
     return {
-        "statistics": stats,
+        "agent_statistics": stats,
+        "cache_statistics": cache_stats,
+        "conversation_statistics": db_stats,
         "configuration": {
             "complexity_threshold": COMPLEXITY_THRESHOLD,
-            "routing_strategy": "TF-IDF (< 50) / Transformer (≥ 50)"
+            "cache_enabled": CACHE_ENABLED,
+            "cache_ttl": CACHE_TTL,
+            "routing_strategy": f"TF-IDF (< {COMPLEXITY_THRESHOLD}) / Transformer (≥ {COMPLEXITY_THRESHOLD})"
         }
     }
+
+
+@app.get("/history/{session_id}")
+async def get_session_history(session_id: str, limit: int = 50):
+    """
+    Récupère l'historique des conversations d'une session
+    
+    Args:
+        session_id: ID de la session
+        limit: Nombre maximum de conversations à retourner
+    """
+    try:
+        history = conversation_store.get_session_history(session_id, limit)
+        return {
+            "session_id": session_id,
+            "count": len(history),
+            "conversations": history
+        }
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération de l'historique: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/cache/clear")
+async def clear_cache():
+    """
+    Vide complètement le cache
+    """
+    try:
+        count = cache_manager.clear()
+        return {
+            "message": "Cache vidé avec succès",
+            "entries_cleared": count
+        }
+    except Exception as e:
+        logger.error(f"Erreur lors du vidage du cache: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/cache/cleanup")
+async def cleanup_cache():
+    """
+    Nettoie les entrées expirées du cache
+    """
+    try:
+        count = cache_manager.cleanup_expired()
+        return {
+            "message": "Nettoyage effectué",
+            "entries_removed": count
+        }
+    except Exception as e:
+        logger.error(f"Erreur lors du nettoyage du cache: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/cache/stats")
+async def get_cache_stats():
+    """
+    Récupère les statistiques détaillées du cache
+    """
+    try:
+        stats = cache_manager.get_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des stats du cache: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/config/threshold")

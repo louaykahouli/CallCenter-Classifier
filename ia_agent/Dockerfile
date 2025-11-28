@@ -16,6 +16,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copier le code de l'agent
 COPY *.py .
 
+# Créer le dossier pour la base de données
+RUN mkdir -p /app/data
+
 EXPOSE 8002
 
 # Lancer l'API

@@ -1,1 +1,9 @@
-dvc stage add -n train_tfidf -d src/train.py -d data/processed.csv -o models/tfidf_svm.joblib python src/train.py
+stages:
+  train_tfidf:
+    cmd: python src/train.py
+    deps:
+      - src/train.py
+      - data/processed.csv
+    outs:
+      - models/tfidf_svm.joblib
+

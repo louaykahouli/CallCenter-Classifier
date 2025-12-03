@@ -35,6 +35,8 @@ COPY Transformer/Transformer/api/ /app/api/
 COPY Transformer/Transformer/src/ /app/src/
 COPY Transformer/Transformer/tests/ /app/tests/
 COPY Transformer/Transformer/params.yaml /app/
+# Copy the ia_agent package so the API can import the IntelligentAgent router
+COPY ia_agent/ /app/ia_agent/
 
 # Créer les dossiers nécessaires
 RUN mkdir -p /app/mlruns /app/data/processed /app/data/raw

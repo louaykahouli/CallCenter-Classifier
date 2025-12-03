@@ -21,9 +21,14 @@ from .config import (
 )
 
 # Import de l'agent intelligent
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from src.intelligent_agent import IntelligentAgent
+try:
+    # Preferred: import the top-level ia_agent package if available in the environment
+    from ia_agent import IntelligentAgent
+except Exception:
+    # Fallback: try to import legacy local module under Transformer package (src.intelligent_agent)
+    import sys
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+    from src.intelligent_agent import IntelligentAgent
 
 # Prometheus instrumentation
 try:

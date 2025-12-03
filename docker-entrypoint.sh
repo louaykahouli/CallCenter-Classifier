@@ -21,13 +21,13 @@ start_mlflow() {
 start_all() {
     echo "🚀 Starting MLflow and API..."
     cd /app
-    
+
     # Démarrer MLflow en arrière-plan
     mlflow ui --host 0.0.0.0 --port 5000 --backend-store-uri /app/mlruns &
-    
+
     # Attendre que MLflow démarre
     sleep 5
-    
+
     # Démarrer l'API
     exec uvicorn api.main:app --host 0.0.0.0 --port 8000
 }

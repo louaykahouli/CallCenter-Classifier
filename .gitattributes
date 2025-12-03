@@ -1,0 +1,6 @@
+# Ensure shell scripts use LF endings to be executable inside Linux containers
+docker-entrypoint.sh text eol=lf
+*.sh text eol=lf
+monitoring/** text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf

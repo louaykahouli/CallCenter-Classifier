@@ -15,20 +15,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     git \
+    bash \
     && rm -rf /var/lib/apt/lists/*
 
 # Copier le fichier requirements
-COPY Transformer/requirements.txt .
+COPY Transformer/Transformer/requirements.txt .
 
 # Installer les dépendances Python (version CPU de PyTorch pour réduire la taille)
+# Install torch from the official PyTorch CPU index, then install the rest of
+# the requirements while excluding the `torch` line to avoid double-install
+# and hash mismatches.
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir -r requirements.txt
+    sed -e '/^torch/Id' requirements.txt > requirements_no_torch.txt && \
+    pip install --no-cache-dir -r requirements_no_torch.txt && \
+    rm -f requirements_no_torch.txt
 
 # Copier seulement le code nécessaire (pas .venv, models, mlruns)
-COPY Transformer/api/ /app/api/
-COPY Transformer/src/ /app/src/
-COPY Transformer/tests/ /app/tests/
-COPY Transformer/params.yaml /app/
+COPY Transformer/Transformer/api/ /app/api/
+COPY Transformer/Transformer/src/ /app/src/
+COPY Transformer/Transformer/tests/ /app/tests/
+COPY Transformer/Transformer/params.yaml /app/
 
 # Créer les dossiers nécessaires
 RUN mkdir -p /app/mlruns /app/data/processed /app/data/raw

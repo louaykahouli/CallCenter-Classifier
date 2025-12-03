@@ -25,6 +25,13 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from src.intelligent_agent import IntelligentAgent
 
+# Prometheus instrumentation
+try:
+    from prometheus_fastapi_instrumentator import Instrumentator
+    PROMETHEUS_AVAILABLE = True
+except ImportError:
+    PROMETHEUS_AVAILABLE = False
+
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,6 +60,20 @@ app = FastAPI(
     description="API pour classifier automatiquement les tickets du centre d'appels",
     version="1.0.0"
 )
+
+# Ajouter instrumentation Prometheus
+if PROMETHEUS_AVAILABLE:
+    try:
+        instrumentator = Instrumentator(
+            should_group_status_codes=True,
+            should_instrument_requests_inprogress=True
+        )
+        instrumentator.instrument(app).expose(app, endpoint="/metrics")
+        logger.info("✅ Prometheus instrumentation activée")
+    except Exception as e:
+        logger.warning(f"⚠️  Prometheus instrumentation échouée: {e}")
+else:
+    logger.warning("⚠️  prometheus_fastapi_instrumentator non disponible")
 
 # Modèles Pydantic
 class TicketRequest(BaseModel):

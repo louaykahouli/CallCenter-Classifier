@@ -15,6 +15,7 @@ import uuid
 from typing import Dict, Optional
 from intelligent_agent import IntelligentAgent
 from cache_manager import CacheManager, ConversationStore
+from prometheus_fastapi_instrumentator import Instrumentator
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO)
@@ -35,6 +36,12 @@ app = FastAPI(
     description="Router intelligent qui choisit le meilleur modèle selon la complexité du texte",
     version="2.0.0"
 )
+
+instrumentator = Instrumentator(
+    should_group_status_codes=True,  # groups status codes into 2xx/4xx/5xx
+    should_instrument_requests_inprogress=True
+)
+instrumentator.instrument(app).expose(app, endpoint="/metrics")
 
 # Configuration CORS pour permettre les requêtes du frontend
 app.add_middleware(

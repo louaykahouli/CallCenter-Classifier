@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'callcenter-monitor'
+
+scrape_configs:
+  # Callcenter Transformer API
+  - job_name: 'callcenter'
+    static_configs:
+      - targets: ['callcenter:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # TF-IDF SVM API
+  - job_name: 'tfidf-svm'
+    static_configs:
+      - targets: ['tfidf-svm:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Intelligent Agent IA
+  - job_name: 'ia-agent'
+    static_configs:
+      - targets: ['ia-agent:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # Prometheus itself for internal metrics
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']

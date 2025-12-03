@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Plus, Menu, MessageSquare, Trash2, Edit2, BarChart3, Zap } from 'lucide-react';
+import { Send, Plus, Menu, MessageSquare, Trash2, BarChart3, Zap } from 'lucide-react';
 
 export default function ChatInterface() {
   const [conversations, setConversations] = useState([]);
@@ -151,27 +151,27 @@ export default function ChatInterface() {
     }
   };
 
-  const updateConversationTitle = (id, newTitle) => {
-    const updated = conversations.map(c => {
-      if (c.id === id && c.title === 'Nouvelle conversation') {
-        return { ...c, title: newTitle.substring(0, 50) };
-      }
-      return c;
-    });
-    setConversations(updated);
-    saveConversations(updated);
-  };
+  // const updateConversationTitle = (id, newTitle) => {
+  //   const updated = conversations.map(c => {
+  //     if (c.id === id && c.title === 'Nouvelle conversation') {
+  //       return { ...c, title: newTitle.substring(0, 50) };
+  //     }
+  //     return c;
+  //   });
+  //   setConversations(updated);
+  //   saveConversations(updated);
+  // };
 
-  const updateConversationMessages = (convId, newMessages) => {
-    const updated = conversations.map(c => {
-      if (c.id === convId) {
-        return { ...c, messages: newMessages };
-      }
-      return c;
-    });
-    setConversations(updated);
-    saveConversations(updated);
-  };
+  // const updateConversationMessages = (convId, newMessages) => {
+  //   const updated = conversations.map(c => {
+  //     if (c.id === convId) {
+  //       return { ...c, messages: newMessages };
+  //     }
+  //     return c;
+  //   });
+  //   setConversations(updated);
+  //   saveConversations(updated);
+  // };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -488,12 +488,12 @@ ${Object.entries(data.probabilities)
             <div className="h-full flex items-center justify-center">
               <div className="text-center max-w-2xl px-4">
                 <h2 className="text-4xl font-bold mb-4">🤖 Agent IA Intelligent</h2>
-                <p className="text-gray-400 text-lg mb-6">Classificateur de tickets du centre d'appels</p>
+                <p className="text-gray-400 text-lg mb-6">Classificateur de tickets du centre d&apos;appels</p>
                 <div className="text-left bg-gray-800 rounded-lg p-6 space-y-3">
                   <p className="text-gray-300 font-semibold">Comment ça marche ?</p>
                   <ul className="text-gray-400 space-y-2 text-sm">
                     <li>📝 Décrivez votre problème ou ticket</li>
-                    <li>🧠 L'agent analyse la complexité de votre texte</li>
+                    <li>🧠 L&apos;agent analyse la complexité de votre texte</li>
                     <li>🎯 Il choisit automatiquement le meilleur modèle (TF-IDF ou Transformer)</li>
                     <li>📊 Vous recevez la catégorie prédite avec les probabilités</li>
                   </ul>
@@ -555,7 +555,7 @@ ${Object.entries(data.probabilities)
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowStats(false)}>
           <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">📊 Statistiques de l'Agent IA</h2>
+              <h2 className="text-2xl font-bold">📊 Statistiques de l&apos;Agent IA</h2>
               <button
                 onClick={() => setShowStats(false)}
                 className="text-gray-400 hover:text-white text-2xl"

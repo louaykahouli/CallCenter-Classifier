@@ -481,6 +481,15 @@ ${Object.entries(data.probabilities)
             </button>
           </div>
         </div>
+        {/* Grafana Panel */}
+  <div className="p-4">
+    <iframe
+      src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&from=1764813142027&to=1764834742027&timezone=browser&refresh=10s&panelId=panel-2&__feature.dashboardSceneSolo=true"
+      width="450"
+      height="200"
+      frameBorder="0"
+    ></iframe>
+  </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">

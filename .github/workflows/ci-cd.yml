@@ -47,9 +47,9 @@ jobs:
       with:
         context: .
         push: true
-        tags: yourusername/callcenter:latest
+        tags: maalejala/callcenter:latest
 
     - name: Scan Docker image with Trivy
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: yourusername/callcenter:latest
+        image-ref: maalejala/callcenter:latest

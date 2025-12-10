@@ -12,6 +12,8 @@ export default function ChatInterface() {
   const [stats, setStats] = useState(null);
   const [titlesSynced, setTitlesSynced] = useState(false); // Pour ne synchro qu'une fois
   const messagesEndRef = useRef(null);
+  const [showGrafana, setShowGrafana] = useState(false);
+
 
   useEffect(() => {
     loadConversations();
@@ -479,17 +481,79 @@ ${Object.entries(data.probabilities)
               <BarChart3 size={16} />
               <span>Statistiques</span>
             </button>
+<button
+  onClick={() => setShowGrafana(!showGrafana)}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-sm"
+>
+  <BarChart3 size={18} />
+ <span>Grafana</span>
+</button>
+
+
           </div>
+            
         </div>
         {/* Grafana Panel */}
-  <div className="p-4">
-    <iframe
-      src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&from=1764813142027&to=1764834742027&timezone=browser&refresh=10s&panelId=panel-2&__feature.dashboardSceneSolo=true"
-      width="450"
-      height="200"
-      frameBorder="0"
-    ></iframe>
+{showGrafana && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+       onClick={() => setShowStats(false)}>
+
+    <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+         onClick={(e) => e.stopPropagation()}>
+
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold">📊 Statistiques de l&apos;Agent IA</h2>
+        <button
+          onClick={() => setShowGrafana(false)}
+          className="text-gray-400 hover:text-white text-2xl"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <iframe
+          className="w-full h-52 rounded-lg border border-gray-700 p-1 bg-black"
+          src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&panelId=panel-2&refresh=10s"
+          frameBorder="0"
+        ></iframe>
+
+        <iframe
+          className="w-full h-52 rounded-lg border border-gray-700 p-1 bg-black"
+          src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&panelId=panel-3&refresh=10s"
+          frameBorder="0"
+        ></iframe>
+
+        <iframe
+          className="w-full h-52 rounded-lg border border-gray-700 p-1 bg-black"
+          src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&panelId=panel-4&refresh=10s"
+          frameBorder="0"
+        ></iframe>
+
+        <iframe
+          className="w-full h-52 rounded-lg border border-gray-700 p-1 bg-black"
+          src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&panelId=panel-5&refresh=10s"
+          frameBorder="0"
+        ></iframe>
+
+        <iframe
+          className="w-full h-52 rounded-lg border border-gray-700 p-1 bg-black"
+          src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&panelId=panel-6&refresh=10s"
+          frameBorder="0"
+        ></iframe>
+
+        <iframe
+          className="w-full h-52 rounded-lg border border-gray-700 p-1 bg-black"
+          src="http://localhost:3000/d-solo/callcenter-dash/callcenter-monitoring-dashboard?orgId=1&panelId=panel-7&refresh=10s"
+          frameBorder="0"
+        ></iframe>
+
+      </div>
+    </div>
   </div>
+)}
+
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto">

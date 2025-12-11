@@ -219,12 +219,12 @@ jobs:
       with:
         node-version: 20
 
-    - name: 🔐 SonarQube Analysis (Optional - if secrets configured)
+    - name: 🔍 SonarQube Analysis (Optional - if secrets configured)
       uses: SonarSource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      if: ${{ secrets.SONAR_TOKEN != null }}
+      if: github.event_name == 'push'
       continue-on-error: true
 
     - name: 📈 Check code formatting (Black - Python)

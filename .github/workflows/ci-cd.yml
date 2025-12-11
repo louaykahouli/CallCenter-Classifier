@@ -12,9 +12,9 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_CALLCENTER: maalejala/callcenter
-  IMAGE_TFIDF: maalejala/tfidf-svm
-  IMAGE_AGENT: maalejala/ia-agent
+  IMAGE_CALLCENTER: "maalejala/callcenter"
+  IMAGE_TFIDF: "maalejala/tfidf-svm"
+  IMAGE_AGENT: "maalejala/ia-agent"
 
 jobs:
   # ============================================================================
@@ -120,15 +120,15 @@ jobs:
         image:
           - dockerfile: "Dockerfile"
             context: "."
-            tag: "${{ env.IMAGE_CALLCENTER }}:latest"
+            tag: "maalejala/callcenter:latest"
             name: "CallCenter (Transformer + MLflow)"
           - dockerfile: "tfidf_svm/Dockerfile.api"
             context: "tfidf_svm"
-            tag: "${{ env.IMAGE_TFIDF }}:latest"
+            tag: "maalejala/tfidf-svm:latest"
             name: "TF-IDF SVM API"
           - dockerfile: "ia_agent/Dockerfile"
             context: "ia_agent"
-            tag: "${{ env.IMAGE_AGENT }}:latest"
+            tag: "maalejala/ia-agent:latest"
             name: "IA Agent Router"
 
     steps:
@@ -167,11 +167,11 @@ jobs:
       matrix:
         image:
           - name: "CallCenter"
-            tag: "${{ env.IMAGE_CALLCENTER }}:latest"
+            tag: "maalejala/callcenter:latest"
           - name: "TF-IDF SVM"
-            tag: "${{ env.IMAGE_TFIDF }}:latest"
+            tag: "maalejala/tfidf-svm:latest"
           - name: "IA Agent"
-            tag: "${{ env.IMAGE_AGENT }}:latest"
+            tag: "maalejala/ia-agent:latest"
 
     steps:
     - name: Checkout code
@@ -219,12 +219,12 @@ jobs:
       with:
         node-version: 20
 
-    - name: 🔍 SonarQube Analysis (Optional - if secrets configured)
+    - name: 🔐 SonarQube Analysis (Optional - if secrets configured)
       uses: SonarSource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      if: ${{ secrets.SONAR_TOKEN != '' }}
+      if: ${{ secrets.SONAR_TOKEN != null }}
       continue-on-error: true
 
     - name: 📈 Check code formatting (Black - Python)
@@ -304,9 +304,9 @@ jobs:
       run: |
         echo "✅ All tests passed!"
         echo "📦 Ready to deploy:"
-        echo "  - ${{ env.IMAGE_CALLCENTER }}:latest"
-        echo "  - ${{ env.IMAGE_TFIDF }}:latest"
-        echo "  - ${{ env.IMAGE_AGENT }}:latest"
+        echo "  - maalejala/callcenter:latest"
+        echo "  - maalejala/tfidf-svm:latest"
+        echo "  - maalejala/ia-agent:latest"
 
     - name: 📢 Notify deployment
       run: |
